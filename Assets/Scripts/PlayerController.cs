@@ -14,15 +14,26 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private LayerMask whatIsGround;
 
     private float xAxis;
-    #region PLAYERCONTROLLER
+    private CharacterAnimatorController characterAnimatorController;
+
+    private void Start()
+    {
+        characterAnimatorController = GetComponent<CharacterAnimatorController>();
+    }
+
     private void FixedUpdate()
     {
         rb.linearVelocity = new Vector2(xAxis * walkSpeed, rb.linearVelocityY);
+        characterAnimatorController.SetAnimationState("Walking", rb.linearVelocityX != 0 && isGrounded());
+        characterAnimatorController.SetAnimationState("Jumping", !isGrounded());
     }
+
+    #region PLAYERCONTROLLER
 
     public void Move(InputAction.CallbackContext context)
     {
         xAxis = context.ReadValue<Vector2>().x;
+        Flip();
     }
 
     public void Jump(InputAction.CallbackContext context)
@@ -31,6 +42,22 @@ public class PlayerController : MonoBehaviour
         {
             rb.linearVelocity = new Vector2(rb.linearVelocityX, jumpForce);
         }
+    }
+
+    public void Attack(InputAction.CallbackContext context)
+    {
+        if (context.performed)
+        {
+            if (characterAnimatorController.ReturnCurrentAnimation().Equals("Attacking1"))
+            {
+                characterAnimatorController.SetAnimationState("Attacking2", true);
+            }
+            else
+            {
+                characterAnimatorController.SetAnimationState("Attacking1", true);
+            }
+        }
+
     }
 
     private bool isGrounded()
@@ -48,8 +75,22 @@ public class PlayerController : MonoBehaviour
 
     }
 
+    private void Flip()
+    {
+        if (xAxis < 0)
+        {
+            transform.localScale = new Vector2(-1, transform.localScale.y);
+        }
+        else if (xAxis > 0)
+        {
+            transform.localScale = new Vector2(1, transform.localScale.y);
+        }
+    }
+
     #endregion
 
+
+    //OLD METHODS
     /*private void Update()
     {
         GetInputs();
