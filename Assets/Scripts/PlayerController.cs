@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -8,15 +9,20 @@ public class PlayerController : MonoBehaviour
     [Header("Ground and Movement Settings")]
     [SerializeField] private float jumpForce;
     [SerializeField] private float walkSpeed;
+    [SerializeField] private float dashValue;
     [SerializeField] private Transform groundCheckPoint;
     [SerializeField] private float groundChecky = 0.2f;
     [SerializeField] private float groundCheckx = 0.2f;
     [SerializeField] private LayerMask whatIsGround;
 
-    private float xAxis;
     private CharacterAnimatorController characterAnimatorController;
+    private float xAxis;
+    private float yAxis;
+    private bool canMove = true;
+    private bool canCrouch = true;
 
-    private void Start()
+
+    private void Awake()
     {
         characterAnimatorController = GetComponent<CharacterAnimatorController>();
     }
@@ -32,7 +38,20 @@ public class PlayerController : MonoBehaviour
 
     public void Move(InputAction.CallbackContext context)
     {
-        xAxis = context.ReadValue<Vector2>().x;
+        if (canMove)
+        {
+            xAxis = context.ReadValue<Vector2>().x;
+        }
+        else
+        {
+            xAxis = 0;
+        }
+        if (canCrouch)
+        {
+            yAxis = context.ReadValue<Vector2>().y;
+            Crouch();
+        }
+
         Flip();
     }
 
@@ -57,7 +76,6 @@ public class PlayerController : MonoBehaviour
                 characterAnimatorController.SetAnimationState("Attacking1", true);
             }
         }
-
     }
 
     private bool isGrounded()
@@ -66,10 +84,12 @@ public class PlayerController : MonoBehaviour
             || Physics2D.Raycast(groundCheckPoint.position + new Vector3(groundCheckx, 0, 0), Vector2.down, groundChecky, whatIsGround)
             || Physics2D.Raycast(groundCheckPoint.position + new Vector3(-groundCheckx, 0, 0), Vector2.down, groundChecky, whatIsGround))
         {
+            canCrouch = true;
             return true;
         }
         else
         {
+            canCrouch = false;
             return false;
         }
 
@@ -87,8 +107,73 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    private void Crouch()
+    {
+        if (yAxis < 0 && isGrounded())
+        {
+            characterAnimatorController.SetAnimationState("Crouching", true);
+            xAxis = 0;
+        }
+        else
+        {
+            characterAnimatorController.SetAnimationState("Crouching", false);
+        }
+    }
+
+    public void Dash(InputAction.CallbackContext context)
+    {
+        if (context.performed && isGrounded())
+        {
+            characterAnimatorController.SetAnimationState("Dashing", true);
+            float dashDirectionValue = transform.localScale.x > 0 ? 1f : -1f;
+            Vector2 dashDirection = new Vector2(dashDirectionValue * dashValue, 0);
+            if (xAxis !=0)
+            {
+                dashDirection *= 2;
+            }
+
+            rb.MovePosition(rb.position + dashDirection);
+        }
+    }
+
     #endregion
 
+    #region ANIMATION_EVENTS
+
+    public void EndDashEvent()
+    {
+        characterAnimatorController.SetAnimationState("Dashing", false);
+    }
+
+    public void FirstAttackEvent()
+    {
+        if (characterAnimatorController.ReturnCurrentAnimation().Equals("Attacking2"))
+        {
+
+        }
+        else
+        {
+            characterAnimatorController.SetAnimationState("Attacking", false);
+        }
+    }
+
+    public void SecondAttackEvent()
+    {
+
+    }
+
+    #endregion
+
+    public enum AnimationState
+    {
+        Idle,
+        Walking,
+        Crouching,
+        Attacking1,
+        Attacking2,
+        Jumping,
+        Dashing
+    }
 
     //OLD METHODS
     /*private void Update()
