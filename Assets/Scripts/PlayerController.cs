@@ -89,13 +89,15 @@ public class PlayerController : MonoBehaviour
     {
         if (context.performed)
         {
-            if (characterAnimatorController.ReturnCurrentAnimation().Equals("Attacking1"))
+            if (characterAnimatorController.animator.GetBool("Attacking1"))
             {
+                characterAnimatorController.SetAnimationState("Attacking1", false);
                 characterAnimatorController.SetAnimationState("Attacking2", true);
             }
             else
             {
                 characterAnimatorController.SetAnimationState("Attacking1", true);
+                characterAnimatorController.SetAnimationState("Attacking2", false);
             }
         }
     }
@@ -157,7 +159,6 @@ public class PlayerController : MonoBehaviour
         canMove = false;
         canDash = false;
         currentVelocity = new Vector2(dashValue * transform.localScale.x, rb.linearVelocityY);
-        characterAnimatorController.animator.SetTrigger("Dash");
         trailRenderer.emitting = true;
         //rb.linearVelocityX = dashValue * transform.localScale.x;
         yield return new WaitForSeconds(dashDuration);
@@ -174,6 +175,11 @@ public class PlayerController : MonoBehaviour
     public void EndDashEvent()
     {
         characterAnimatorController.SetAnimationState("Dashing", false);
+    }
+
+    public void AttackCycleEvent(string attackCycle)
+    {
+        characterAnimatorController.SetAnimationState(attackCycle, false);
     }
 
     #endregion
