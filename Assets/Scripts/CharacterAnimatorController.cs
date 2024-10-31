@@ -3,11 +3,16 @@ using System;
 
 public class CharacterAnimatorController : MonoBehaviour
 {
-    [SerializeField]private Animator animator;
+    public Animator animator;
     private string currentAnimation;
     private PlayerAnimationState currentState;
 
     // Activa animaciones continuas (como caminar)
+
+    private void Awake()
+    {
+        currentAnimation = "Idle";
+    }
     public void SetAnimationState(string animationName, bool state)
     {
 
@@ -19,6 +24,14 @@ public class CharacterAnimatorController : MonoBehaviour
 
         // Actualiza la animación actual si está activa
         if (state) currentAnimation = animationName;
+
+        foreach (PlayerAnimationState playerState in Enum.GetValues(typeof(PlayerAnimationState)))
+        {
+            if (playerState.ToString().Equals(animationName))
+            {
+                currentState = playerState;
+            }
+        }
 
         CheckAndSetIdle();
 

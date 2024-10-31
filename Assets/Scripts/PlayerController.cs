@@ -1,37 +1,53 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Unity.Mathematics;
 
 public class PlayerController : MonoBehaviour
 {
     [SerializeField] private Rigidbody2D rb;
 
-    [Header("Ground and Movement Settings")]
+    [Header("Ground & Movement Settings")]
     [SerializeField] private float jumpForce;
     [SerializeField] private float walkSpeed;
-    [SerializeField] private float dashValue;
+    [SerializeField] private float dashValue = 20f;
+    [SerializeField] private float dashDuration = 0.4f;
+    [SerializeField] private float dashCooldown = 1f;
     [SerializeField] private Transform groundCheckPoint;
     [SerializeField] private float groundChecky = 0.2f;
     [SerializeField] private float groundCheckx = 0.2f;
     [SerializeField] private LayerMask whatIsGround;
 
-    private CharacterAnimatorController characterAnimatorController;
+    [Header("Animations & Effects")]
+    [SerializeField] private CharacterAnimatorController characterAnimatorController;
+    [SerializeField] private TrailRenderer trailRenderer;
+    private Vector2 currentVelocity;
+    private float currentXSpeed;
     private float xAxis;
     private float yAxis;
     private bool canMove = true;
     private bool canCrouch = true;
-
-
-    private void Awake()
-    {
-        characterAnimatorController = GetComponent<CharacterAnimatorController>();
-    }
+    private bool canDash = true;
+    private bool performingAction = false;
 
     private void FixedUpdate()
     {
-        rb.linearVelocity = new Vector2(xAxis * walkSpeed, rb.linearVelocityY);
+
         characterAnimatorController.SetAnimationState("Walking", rb.linearVelocityX != 0 && isGrounded());
         characterAnimatorController.SetAnimationState("Jumping", !isGrounded());
+
+        if (!performingAction)
+        {
+            rb.linearVelocity = new Vector2(xAxis * walkSpeed, rb.linearVelocityY);
+        }
+        else
+        {
+            rb.linearVelocity = new Vector2(currentVelocity.x, rb.linearVelocityY);
+        }
+        
+
     }
 
     #region PLAYERCONTROLLER
@@ -59,8 +75,13 @@ public class PlayerController : MonoBehaviour
     {
         if (context.performed && isGrounded())
         {
-            characterAnimatorController.DisableAllAnimations();
-            rb.linearVelocity = new Vector2(rb.linearVelocityX, jumpForce);
+            canMove = true;
+
+            if (context.performed && isGrounded())
+            {
+                rb.linearVelocity = new Vector2(rb.linearVelocityX, jumpForce);
+            }
+
         }
     }
 
@@ -126,9 +147,24 @@ public class PlayerController : MonoBehaviour
         if (context.performed && isGrounded())
         {
             characterAnimatorController.SetAnimationState("Dashing", true);
-            rb.linearVelocity = new Vector2(transform.localScale.x*dashValue, 0f);
-            
+            StartCoroutine(GenerateDash());
         }
+    }
+
+    public IEnumerator GenerateDash()
+    {
+        performingAction = true;
+        canMove = false;
+        canDash = false;
+        currentVelocity = new Vector2(dashValue * transform.localScale.x, rb.linearVelocityY);
+        characterAnimatorController.animator.SetTrigger("Dash");
+        trailRenderer.emitting = true;
+        //rb.linearVelocityX = dashValue * transform.localScale.x;
+        yield return new WaitForSeconds(dashDuration);
+        performingAction = false;
+        canMove = true;
+        canDash = true;
+        trailRenderer.emitting = false;
     }
 
     #endregion
