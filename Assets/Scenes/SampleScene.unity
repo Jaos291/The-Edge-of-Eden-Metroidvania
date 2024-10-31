@@ -386,7 +386,7 @@ Rigidbody2D:
   m_ExcludeLayers:
     serializedVersion: 2
     m_Bits: 0
-  m_Interpolate: 0
+  m_Interpolate: 1
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 4
@@ -522,7 +522,7 @@ MonoBehaviour:
   rb: {fileID: 1185092289}
   jumpForce: 10
   walkSpeed: 6.5
-  dashValue: 0.75
+  dashValue: 10
   groundCheckPoint: {fileID: 1254087298}
   groundChecky: 0.2
   groundCheckx: 0.2

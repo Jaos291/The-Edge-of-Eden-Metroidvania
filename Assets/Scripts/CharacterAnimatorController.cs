@@ -5,8 +5,7 @@ public class CharacterAnimatorController : MonoBehaviour
 {
     [SerializeField]private Animator animator;
     private string currentAnimation;
-
-    public event Action OnFinish;
+    private PlayerAnimationState currentState;
 
     // Activa animaciones continuas (como caminar)
     public void SetAnimationState(string animationName, bool state)
@@ -64,8 +63,47 @@ public class CharacterAnimatorController : MonoBehaviour
         animator.SetBool("Idle", enableIdle);
     }
 
+    public void DisableAllAnimations()
+    {
+        for (int i = 0; i < animator.parameterCount; i++)
+        {
+            AnimatorControllerParameter parameter = animator.GetParameter(i);
+
+            // Solo revisa los parámetros de tipo bool
+            if (parameter.type == AnimatorControllerParameterType.Bool)
+            {
+                animator.SetBool(parameter.name, false);
+            }
+        }
+    }
+
     public string ReturnCurrentAnimation()
     {
         return currentAnimation;
+    }
+
+    private void ChangeAnimationState(PlayerAnimationState newState)
+    {
+        if (currentState == newState) return; // Evita activar el mismo estado nuevamente
+
+        // Desactiva todas las animaciones previas antes de cambiar el estado
+        animator.ResetTrigger(currentState.ToString());
+
+        // Activa la animación del nuevo estado
+        animator.SetTrigger(newState.ToString());
+
+        // Actualiza el estado actual
+        currentState = newState;
+    }
+
+    public enum PlayerAnimationState
+    {
+        Idle,
+        Walking,
+        Crouching,
+        Attacking1,
+        Attacking2,
+        Jumping,
+        Dashing
     }
 }

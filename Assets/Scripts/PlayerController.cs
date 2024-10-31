@@ -59,6 +59,7 @@ public class PlayerController : MonoBehaviour
     {
         if (context.performed && isGrounded())
         {
+            characterAnimatorController.DisableAllAnimations();
             rb.linearVelocity = new Vector2(rb.linearVelocityX, jumpForce);
         }
     }
@@ -125,14 +126,8 @@ public class PlayerController : MonoBehaviour
         if (context.performed && isGrounded())
         {
             characterAnimatorController.SetAnimationState("Dashing", true);
-            float dashDirectionValue = transform.localScale.x > 0 ? 1f : -1f;
-            Vector2 dashDirection = new Vector2(dashDirectionValue * dashValue, 0);
-            if (xAxis !=0)
-            {
-                dashDirection *= 2;
-            }
-
-            rb.MovePosition(rb.position + dashDirection);
+            rb.linearVelocity = new Vector2(transform.localScale.x*dashValue, 0f);
+            
         }
     }
 
@@ -145,35 +140,7 @@ public class PlayerController : MonoBehaviour
         characterAnimatorController.SetAnimationState("Dashing", false);
     }
 
-    public void FirstAttackEvent()
-    {
-        if (characterAnimatorController.ReturnCurrentAnimation().Equals("Attacking2"))
-        {
-
-        }
-        else
-        {
-            characterAnimatorController.SetAnimationState("Attacking", false);
-        }
-    }
-
-    public void SecondAttackEvent()
-    {
-
-    }
-
     #endregion
-
-    public enum AnimationState
-    {
-        Idle,
-        Walking,
-        Crouching,
-        Attacking1,
-        Attacking2,
-        Jumping,
-        Dashing
-    }
 
     //OLD METHODS
     /*private void Update()
