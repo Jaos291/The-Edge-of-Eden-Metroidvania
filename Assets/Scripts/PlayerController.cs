@@ -7,6 +7,11 @@ using Unity.Mathematics;
 
 public class PlayerController : MonoBehaviour
 {
+
+    //Singleton
+
+    public static PlayerController Instance;
+
     [SerializeField] private Rigidbody2D rb;
 
     [Header("Ground & Movement Settings")]
@@ -31,7 +36,12 @@ public class PlayerController : MonoBehaviour
     private bool canCrouch = true;
     private bool canDash = true;
     private bool performingAction = false;
+    private PlayerAnimationState currentState;
 
+    private void Awake()
+    {
+        Instance = this;
+    }
     private void FixedUpdate()
     {
 
@@ -57,6 +67,7 @@ public class PlayerController : MonoBehaviour
         if (canMove)
         {
             xAxis = context.ReadValue<Vector2>().x;
+            currentState = PlayerAnimationState.Walking;
         }
         else
         {
@@ -73,31 +84,38 @@ public class PlayerController : MonoBehaviour
 
     public void Jump(InputAction.CallbackContext context)
     {
-        if (context.performed && isGrounded())
+        if (context.performed && isGrounded() && currentState != PlayerAnimationState.Jumping)
         {
             canMove = true;
+            rb.linearVelocity = new Vector2(rb.linearVelocityX, jumpForce);
+            currentState = PlayerAnimationState.Jumping;
+            characterAnimatorController.SetAnimationState("Jumping", true);
 
-            if (context.performed && isGrounded())
-            {
-                rb.linearVelocity = new Vector2(rb.linearVelocityX, jumpForce);
-            }
-
+        }
+        else if (context.performed && !isGrounded() && currentState == PlayerAnimationState.Jumping)
+        {
+            canMove = true;
+            rb.linearVelocity = new Vector2(rb.linearVelocityX, jumpForce);
+            currentState = PlayerAnimationState.Jumping2;
+            characterAnimatorController.SetAnimationState("Jumping", true);
         }
     }
 
     public void Attack(InputAction.CallbackContext context)
     {
-        if (context.performed)
+        if (context.performed && !currentState.Equals(PlayerAnimationState.Jumping))
         {
             if (characterAnimatorController.animator.GetBool("Attacking1"))
             {
                 characterAnimatorController.SetAnimationState("Attacking1", false);
                 characterAnimatorController.SetAnimationState("Attacking2", true);
+                currentState = PlayerAnimationState.Attacking2;
             }
             else
             {
                 characterAnimatorController.SetAnimationState("Attacking1", true);
                 characterAnimatorController.SetAnimationState("Attacking2", false);
+                currentState = PlayerAnimationState.Attacking1;
             }
         }
     }
@@ -137,6 +155,7 @@ public class PlayerController : MonoBehaviour
         {
             characterAnimatorController.SetAnimationState("Crouching", true);
             xAxis = 0;
+            currentState = PlayerAnimationState.Crouching;
         }
         else
         {
@@ -146,7 +165,7 @@ public class PlayerController : MonoBehaviour
 
     public void Dash(InputAction.CallbackContext context)
     {
-        if (context.performed && isGrounded())
+        if (context.performed && isGrounded() && (!currentState.Equals(PlayerAnimationState.Dashing)))
         {
             characterAnimatorController.SetAnimationState("Dashing", true);
             StartCoroutine(GenerateDash());
@@ -155,6 +174,7 @@ public class PlayerController : MonoBehaviour
 
     public IEnumerator GenerateDash()
     {
+        currentState = PlayerAnimationState.Dashing;
         performingAction = true;
         canMove = false;
         canDash = false;
@@ -172,14 +192,39 @@ public class PlayerController : MonoBehaviour
 
     #region ANIMATION_EVENTS
 
+    public void SetIdle()
+    {
+        characterAnimatorController.SetAnimationState("Idle",true);
+        currentState = PlayerAnimationState.Idle;
+    }
     public void EndDashEvent()
     {
         characterAnimatorController.SetAnimationState("Dashing", false);
     }
 
-    public void AttackCycleEvent(string attackCycle)
+    public void EndSpecificEvent(string attackCycle)
     {
         characterAnimatorController.SetAnimationState(attackCycle, false);
+    }
+
+    public void SecondJumpEvent()
+    {
+        if (currentState.Equals(PlayerAnimationState.Jumping2))
+        {
+            characterAnimatorController.SetAnimationState("Falling",true);
+        }
+    }
+
+    public enum PlayerAnimationState
+    {
+        Idle,
+        Walking,
+        Crouching,
+        Attacking1,
+        Attacking2,
+        Jumping,
+        Jumping2,
+        Dashing
     }
 
     #endregion
